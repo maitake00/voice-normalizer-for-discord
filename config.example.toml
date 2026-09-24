@@ -1,0 +1,23 @@
+# Copy this file to config.toml (used by the command-line version).
+# client_id / client_secret come from your own Discord application
+# (see "Usage" in the README).
+
+[discord]
+client_id = ""
+client_secret = ""
+
+[params]
+target_db = -24.0     # target loudness (dB)
+percentile = 87.5     # percentile treated as a person's voice level (see "Balancing" in the README)
+window = 600          # histogram window (blocks of 100 ms; 600 = 60 seconds)
+min_samples = 50      # minimum samples before adjusting a person
+deadband_db = 1.5     # differences smaller than this are left alone
+max_step_db = 3.0     # maximum change per adjustment
+
+[ui]
+language = "auto"     # "auto" (Windows display language), "en", or "ja"
+
+[debug]
+# If true, measurement frames (time, user_id, dB, volume%) are written to frames.csv.
+# Numbers only; no audio is saved.
+frame_log = false

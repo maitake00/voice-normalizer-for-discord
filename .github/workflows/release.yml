@@ -1,0 +1,61 @@
+name: Release
+
+# Pushing a tag like v0.1.0 builds the exe from the public source and
+# publishes the zip to Releases. Builds made on a local PC are never distributed.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write      # create the release
+  id-token: write      # sign the build attestation
+  attestations: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .[dev]
+      - run: pytest -q
+
+      - name: Check that the tag matches the version
+        shell: pwsh
+        run: |
+          $v = python -c "import voice_normalizer_for_discord as m; print(m.__version__)"
+          if ("v$v" -ne $env:TAG) { throw "Tag $env:TAG does not match __version__ ($v)" }
+
+      - name: Build exe and zip
+        run: python packaging/make_release.py
+
+      - name: Compute SHA256
+        shell: pwsh
+        run: |
+          Get-ChildItem release/*.zip | ForEach-Object {
+            $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$h  $($_.Name)" | Out-File -Encoding ascii "$($_.FullName).sha256"
+          }
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            release/*.zip
+            dist/VoiceNormalizerForDiscord.exe
+
+      - name: Create release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = (Get-Content packaging/release_notes.md -Raw -Encoding utf8) `
+            -replace '\{version\}', $env:TAG `
+            -replace '\{repo\}', $env:GITHUB_REPOSITORY
+          Set-Content -Path notes.md -Value $notes -Encoding utf8
+          $files = (Get-ChildItem release/*.zip, release/*.sha256).FullName
+          gh release create $env:TAG @files --title "$env:TAG (test version)" --notes-file notes.md --prerelease

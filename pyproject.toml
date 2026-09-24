@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voice-normalizer-for-discord"
+version = "0.1.0"
+description = "Automatically evens out each person's volume in Discord voice calls, on your side only"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    'comtypes>=1.4; sys_platform == "win32"',
+    'psutil>=5.9; sys_platform == "win32"',
+    'pyaudiowpatch>=0.2.12; sys_platform == "win32"',
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pyinstaller>=6"]
+
+[project.scripts]
+voice-normalizer-for-discord = "voice_normalizer_for_discord.app:main"
+
+[project.gui-scripts]
+voice-normalizer-for-discord-gui = "voice_normalizer_for_discord.gui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

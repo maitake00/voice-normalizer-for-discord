@@ -1,0 +1,15 @@
+# 秘密情報・ローカル状態(絶対にコミットしない)
+config.toml
+token.json
+frames.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+*.spec
+release/
