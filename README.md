@@ -38,7 +38,6 @@ Only moments when exactly one person is speaking are measured. A high percentile
   Only [capture/windows_process.py](src/voice_normalizer_for_discord/capture/windows_process.py) (capture) and [core/loudness.py](src/voice_normalizer_for_discord/core/loudness.py) (loudness in dB) touch audio, and samples are discarded after measuring. The only network traffic is the local Discord RPC connection and the OAuth token exchange with Discord.
   (Only if you enable `debug.frame_log`, a numeric log of dB values is saved locally. It contains no audio.)
 - This is not an official Discord product. **Use at your own risk.**
-- Client plugin backends (such as Vencord) may be added later. They modify the Discord client, which is a gray area under Discord's Terms of Service; the default backend is RPC.
 
 ## Usage
 

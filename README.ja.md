@@ -38,7 +38,6 @@ Discord には話者ごとの音量を自動で揃える機能がなく、ユー
   音声に触れるのは [capture/windows_process.py](src/voice_normalizer_for_discord/capture/windows_process.py)(取得)と [core/loudness.py](src/voice_normalizer_for_discord/core/loudness.py)(dB 算出)のみで、算出後のサンプルは破棄されます。ネットワーク通信は Discord とのローカル RPC 接続と、Discord との OAuth トークン交換だけです。
   (`debug.frame_log` を有効にした場合のみ、dB 値の数値ログがローカルに保存されます。音声データは含まれません)
 - Discord の公式ツールではありません。**自己責任でご利用ください。**
-- 将来、クライアントプラグイン(Vencord など)のバックエンドを追加する可能性があります。これはクライアントの改造にあたり、Discord の利用規約上グレーです。既定は RPC バックエンドです。
 
 ## 使い方
 
