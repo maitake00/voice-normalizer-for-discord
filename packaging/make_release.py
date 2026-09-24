@@ -58,12 +58,16 @@ def notepad_text(text: str) -> bytes:
 
 
 def main() -> int:
+    # GitHub Actions の Windows ランナーは標準出力が cp1252 のため、
+    # 日本語のファイル名を print すると落ちる。出力は常に UTF-8 にする
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
     if "--no-build" not in sys.argv:
         build_exe()
 
     exe = ROOT / "dist" / EXE_NAME
     if not exe.exists():
-        sys.exit(f"exe が見つかりません: {exe}")
+        sys.exit(f"exe not found: {exe}")
 
     # GitHub Actions 上では GITHUB_REPOSITORY(owner/repo)が入る
     repo = os.environ.get("GITHUB_REPOSITORY")
@@ -86,7 +90,7 @@ def main() -> int:
         z.writestr(f"{FOLDER}/LICENSE.txt", notepad_text(license_text))
 
     size_mb = out.stat().st_size / 1024 / 1024
-    print(f"作成しました: {out} ({size_mb:.1f} MB)")
+    print(f"Created: {out} ({size_mb:.1f} MB)")
     with zipfile.ZipFile(out) as z:
         for info in z.infolist():
             print(f"  {info.filename}  ({info.file_size / 1024 / 1024:.1f} MB)")

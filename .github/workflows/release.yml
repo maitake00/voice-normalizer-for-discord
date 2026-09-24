@@ -16,6 +16,7 @@ jobs:
     runs-on: windows-latest
     env:
       TAG: ${{ github.ref_name }}
+      PYTHONUTF8: "1"  # the runner console is cp1252; zip entries have Japanese names
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
