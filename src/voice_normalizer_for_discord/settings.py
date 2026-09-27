@@ -44,7 +44,7 @@ def load_config(path: Path) -> dict:
 
 def default_config() -> dict:
     return {
-        "discord": {"client_id": "", "client_secret": ""},
+        "discord": {"client_id": ""},  # 空なら標準のアプリ
         "params": dict(DEFAULT_PARAMS),
         "ui": {"language": "auto"},
         "debug": {"frame_log": False},
@@ -67,7 +67,6 @@ def save_config(path: Path, config: dict) -> None:
 
     lines = ["[discord]"]
     lines.append(f'client_id = {_fmt(str(discord.get("client_id", "")))}')
-    lines.append(f'client_secret = {_fmt(str(discord.get("client_secret", "")))}')
     lines.append("")
     lines.append("[params]")
     for key in DEFAULT_PARAMS:

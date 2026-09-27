@@ -1,7 +1,8 @@
 """GUI 版(tkinter)。exe に固めて配布する想定のエントリポイント。
 
-- 初回起動: 3 ステップのセットアップ(Developer Portal の案内 + ID/Secret 入力)
-- 以降: 起動すると自動で開始。状態・メンバーごとの音量をカードで表示
+- 起動すると自動で開始(標準のアプリ + PKCE。初回だけ Discord で［認証］)
+- 状態・メンバーごとの音量をカードで表示
+- テスター未登録の人は「自分の Discord アプリを使う」画面で Client ID を設定できる
 - Discord 未起動や切断時は自動で再接続する
 - 表示言語は日本語 / 英語(既定は Windows の表示言語に合わせる)
 
@@ -19,7 +20,7 @@ import webbrowser
 from tkinter import ttk
 
 from . import __version__
-from .discord.oauth import REDIRECT_URI
+from .discord.oauth import DEFAULT_CLIENT_ID, REDIRECT_URI
 from .engine import NormalizerEngine
 from .i18n import set_language, t
 from .settings import default_config, gui_config_dir, load_config, save_config
@@ -406,11 +407,9 @@ class NormalizerGUI:
         root.bind("<Configure>", self._on_resize)
         root.protocol("WM_DELETE_WINDOW", self._on_close)
 
-        if self._has_credentials():
-            self._show_main()
-            self._start()
-        else:
-            self._show_setup()
+        # 標準のアプリ(App Testers に登録済みの人向け)があるので、常にすぐ開始する
+        self._show_main()
+        self._start()
 
         self._poll_events()
 
@@ -578,11 +577,8 @@ class NormalizerGUI:
         self.copy_btn.pack(side="left", padx=(px(8), 0))
 
         body = self._step(f, 3, t("setup.step3.title"), t("setup.step3.desc"))
-        d = self.config.get("discord", {})
-        self.client_id_var = tk.StringVar(value=str(d.get("client_id", "")))
-        self.client_secret_var = tk.StringVar(value=str(d.get("client_secret", "")))
+        self.client_id_var = tk.StringVar(value=self._custom_client_id())
         self._paste_row(body, "Client ID", self.client_id_var)
-        self._paste_row(body, "Client Secret", self.client_secret_var, secret=True)
 
         self.setup_error = _label(f, "", size=9, color="red")
         self.setup_error.pack(fill="x", pady=(px(10), 0))
@@ -591,8 +587,11 @@ class NormalizerGUI:
         buttons = tk.Frame(f, bg=C["bg"])
         buttons.pack(fill="x", pady=(px(10), 0))
         FlatButton(buttons, t("setup.save"), self._save_setup, size=11).pack(side="left")
-        self.setup_back = FlatButton(
-            buttons, t("setup.back"), self._show_main, kind="secondary"
+        FlatButton(buttons, t("setup.back"), self._show_main, kind="secondary").pack(
+            side="left", padx=(px(8), 0)
+        )
+        self.setup_default = FlatButton(
+            buttons, t("setup.use_default"), self._use_default_app, kind="secondary", size=9
         )
 
         note = _label(f, t("setup.note"), size=9, color="faint")
@@ -618,23 +617,15 @@ class NormalizerGUI:
         body.pack(fill="x")
         return body
 
-    def _paste_row(self, parent, caption, var, secret=False) -> tk.Entry:
+    def _paste_row(self, parent, caption, var) -> tk.Entry:
         _label(parent, caption, size=9, color="muted").pack(anchor="w", pady=(px(4), px(2)))
         row = tk.Frame(parent, bg=C["panel"])
         row.pack(fill="x")
-        entry = _entry(row, var, show="•" if secret else "")
+        entry = _entry(row, var)
         entry.pack(side="left", fill="x", expand=True, ipady=px(4))
         FlatButton(
             row, t("setup.paste"), lambda: self._paste_into(var), kind="secondary", size=9
         ).pack(side="left", padx=(px(8), 0))
-        if secret:
-            shown = tk.BooleanVar(value=False)
-            _check(
-                row,
-                t("setup.show"),
-                shown,
-                lambda: entry.configure(show="" if shown.get() else "•"),
-            ).pack(side="left", padx=(px(6), 0))
         return entry
 
     # ==== 言語の切り替え ====================================================
@@ -673,11 +664,10 @@ class NormalizerGUI:
 
     # ==== 画面切り替え ======================================================
 
-    def _has_credentials(self) -> bool:
-        d = self.config.get("discord", {})
-        return bool(str(d.get("client_id", "")).strip()) and bool(
-            str(d.get("client_secret", "")).strip()
-        )
+    def _custom_client_id(self) -> str:
+        """自分の Discord アプリの Client ID。標準のアプリを使っているなら空。"""
+        cid = str(self.config.get("discord", {}).get("client_id", "")).strip()
+        return "" if cid == DEFAULT_CLIENT_ID else cid
 
     def _show_main(self) -> None:
         self.setup.pack_forget()
@@ -685,14 +675,12 @@ class NormalizerGUI:
 
     def _show_setup(self) -> None:
         self.main.pack_forget()
-        d = self.config.get("discord", {})
-        self.client_id_var.set(str(d.get("client_id", "")))
-        self.client_secret_var.set(str(d.get("client_secret", "")))
+        self.client_id_var.set(self._custom_client_id())
         self.setup_error.configure(text="")
-        if self._has_credentials():
-            self.setup_back.pack(side="left", padx=(px(8), 0))
+        if self._custom_client_id():
+            self.setup_default.pack(side="right")
         else:
-            self.setup_back.pack_forget()
+            self.setup_default.pack_forget()
         self.setup.pack(fill="both", expand=True)
 
     def _copy_redirect(self) -> None:
@@ -710,21 +698,23 @@ class NormalizerGUI:
 
     def _save_setup(self) -> None:
         client_id = self.client_id_var.get().strip()
-        client_secret = self.client_secret_var.get().strip()
         if not client_id.isdigit() or len(client_id) < 15:
             self.setup_error.configure(text=t("setup.err_id"))
             return
-        if len(client_secret) < 20:
-            self.setup_error.configure(text=t("setup.err_secret"))
-            return
+        self._switch_app(client_id)
 
-        old_id = str(self.config.get("discord", {}).get("client_id", ""))
-        self.config.setdefault("discord", {})
-        self.config["discord"]["client_id"] = client_id
-        self.config["discord"]["client_secret"] = client_secret
+    def _use_default_app(self) -> None:
+        self._switch_app("")
+
+    def _switch_app(self, client_id: str) -> None:
+        """使う Discord アプリを切り替える("" は標準のアプリ)。"""
+        discord = self.config.setdefault("discord", {})
+        old_id = str(discord.get("client_id") or DEFAULT_CLIENT_ID)
+        discord["client_id"] = client_id
+        discord.pop("client_secret", None)  # PKCE で交換するので secret は使わない
         save_config(self.config_path, self.config)
-        if old_id != client_id:
-            # 別アプリの ID に変わったので古いログイン情報は使えない
+        if old_id != (client_id or DEFAULT_CLIENT_ID):
+            # 別アプリに変わったので古いログイン情報は使えない
             (self.config_dir / "token.json").unlink(missing_ok=True)
 
         self._show_main()
@@ -883,9 +873,15 @@ class NormalizerGUI:
         if self.engine is not None:
             return
         try:
-            self.config = load_config(self.config_path)
-        except OSError as e:
-            self._set_error("error.title.config_load", "raw", {"text": str(e)}, action=True)
+            # 初回は設定ファイルが無い。標準のアプリ・既定値で始める
+            if self.config_path.exists():
+                self.config = load_config(self.config_path)
+            else:
+                self.config = default_config()
+        except (OSError, ValueError) as e:
+            self._set_error(
+                "error.title.config_load", "raw", {"text": str(e)}, action="button.review_setup"
+            )
             self._want_running = False
             self._refresh_toggle()
             return
@@ -988,8 +984,12 @@ class NormalizerGUI:
             self._schedule_retry()
         else:
             self._want_running = False
-            if code in ("auth", "redirect"):
-                self._set_error("error.title.check_setup", msg, args, action=True)
+            if code == "not_tester":
+                self._set_error(
+                    "error.title.not_tester", msg, args, action="button.use_own_app"
+                )
+            elif code in ("auth", "redirect"):
+                self._set_error("error.title.check_setup", msg, args, action="button.review_setup")
             else:
                 self._set_error("error.title.generic", msg, args)
             self._refresh_toggle()
@@ -1038,8 +1038,14 @@ class NormalizerGUI:
         self._update_empty()
 
     def _set_error(
-        self, title_key: str, msg: str, args: dict, retry: bool = False, action: bool = False
+        self,
+        title_key: str,
+        msg: str,
+        args: dict,
+        retry: bool = False,
+        action: str | None = None,
     ) -> None:
+        """action はボタンの文言キー。押すと「自分の Discord アプリを使う」画面を開く。"""
         self._state = "error"
         self._error_info = (title_key, msg, args, retry, action)
         self._render_error()
@@ -1055,6 +1061,7 @@ class NormalizerGUI:
         self.chips.pack_forget()
         self.status_action.pack_forget()
         if action:
+            self.status_action.configure(text=t(action))
             self.status_action.pack(anchor="w", pady=(px(12), 0))
         self._update_empty()
 

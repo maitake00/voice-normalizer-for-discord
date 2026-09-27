@@ -97,7 +97,7 @@ class DiscordRPC:
 
     # ---- コマンド ---------------------------------------------------
 
-    def authorize(self, scopes: list[str]) -> str:
+    def authorize(self, scopes: list[str], code_challenge: str | None = None) -> str:
         """Discord クライアント上に承認ダイアログを出し、認可コードを得る。
 
         注意(実測で確認した Discord の仕様):
@@ -106,14 +106,16 @@ class DiscordRPC:
         - 一方、Developer Portal 側にリダイレクト URI が 1 つも登録されて
           いないと「Missing "redirect_uri" in request」で即エラーになり、
           承認ダイアログ自体が表示されない
-        つまり Portal への登録が必須で、リクエストには含めない。
+          → Portal への登録が必須で、リクエストには含めない
+        - code_challenge / code_challenge_method は公式ドキュメントに無いが
+          受け付けられ、Public Client なら secret なしの PKCE 交換が通る
         ユーザーが「認証」を押すまで応答が来ないため、タイムアウトは長めに取る。
         """
-        data = self._command(
-            "AUTHORIZE",
-            {"client_id": self.client_id, "scopes": scopes},
-            timeout=120.0,
-        )
+        args: dict[str, Any] = {"client_id": self.client_id, "scopes": scopes}
+        if code_challenge:
+            args["code_challenge"] = code_challenge
+            args["code_challenge_method"] = "S256"
+        data = self._command("AUTHORIZE", args, timeout=120.0)
         return data["code"]
 
     def authenticate(self, access_token: str) -> dict[str, Any]:

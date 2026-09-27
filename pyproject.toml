@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "voice-normalizer-for-discord"
-version = "0.1.0"
+version = "0.1.1"
 description = "Automatically evens out each person's volume in Discord voice calls, on your side only"
 readme = "README.md"
 requires-python = ">=3.11"

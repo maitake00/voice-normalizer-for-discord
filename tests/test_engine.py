@@ -34,7 +34,7 @@ class FakeRPC:
     def authenticate(self, access_token):
         return {"user": {"id": SELF_ID, "username": SELF_ID}}
 
-    def authorize(self, scopes):
+    def authorize(self, scopes, code_challenge=None):
         raise AssertionError("キャッシュ済みトークンがあるので呼ばれないはず")
 
     def get_voice_settings(self):

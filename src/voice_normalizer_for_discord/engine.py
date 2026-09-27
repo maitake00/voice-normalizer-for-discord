@@ -13,7 +13,7 @@
   stats   {adopted, discarded, rate, chunks, loud, speak, mode}
   error   {code, msg, args}        致命的エラー(エンジンは停止する)
                                    code: no_discord | disconnected |
-                                         redirect | auth | other
+                                         redirect | auth | not_tester | other
   stopped {}                       エンジン終了
 
 notice / error の msg は i18n のキー。UI 側で t(msg, **args) して表示する
@@ -148,18 +148,20 @@ class NormalizerEngine:
 
     # ---- 認証まわり ----
 
+    def _client_id(self) -> str:
+        """設定が空なら配布用アプリ(App Testers に登録された人が使える)。"""
+        return str(self.config.get("discord", {}).get("client_id") or oauth.DEFAULT_CLIENT_ID)
+
     def _authenticate(self, rpc: DiscordRPC) -> dict:
         """キャッシュ済みトークン → リフレッシュ → 再認可 の順に試す。"""
-        client_id = str(self.config["discord"]["client_id"])
-        client_secret = self.config["discord"]["client_secret"]
+        client_id = self._client_id()
+        uses_default_app = client_id == oauth.DEFAULT_CLIENT_ID
         token_path = self.config_dir / "token.json"
 
         token = oauth.load_cached_token(token_path)
         if token and oauth.is_expired(token) and token.get("refresh_token"):
             try:
-                token = oauth.refresh_token(
-                    client_id, client_secret, token["refresh_token"]
-                )
+                token = oauth.refresh_token(client_id, token["refresh_token"])
                 oauth.save_token(token_path, token)
             except OSError:
                 token = None
@@ -171,8 +173,9 @@ class NormalizerEngine:
                 self._log("info", t("log.token_invalid"))
 
         self._status("authorizing", t("status.authorizing.title"))
+        verifier, challenge = oauth.make_pkce()
         try:
-            code = rpc.authorize(oauth.SCOPES)
+            code = rpc.authorize(oauth.SCOPES, code_challenge=challenge)
         except DiscordRPCTimeout as e:
             raise EngineError("auth", "err.auth_timeout") from e
         except DiscordRPCError as e:
@@ -180,13 +183,17 @@ class NormalizerEngine:
             # 「Missing "redirect_uri" in request」を返す
             if "redirect_uri" in str(e):
                 raise EngineError("redirect", "err.redirect") from e
+            # 配布用アプリは App Testers に登録された人しか認可できない
+            if uses_default_app:
+                raise EngineError("not_tester", "err.not_tester", detail=str(e)) from e
             raise EngineError("auth", "err.auth_failed", detail=str(e)) from e
 
         try:
-            token = oauth.exchange_code(client_id, client_secret, code)
+            token = oauth.exchange_code(client_id, code, verifier)
         except urllib.error.HTTPError as e:
-            if e.code == 401:
-                raise EngineError("auth", "err.bad_secret") from e
+            # Public Client がオフのアプリは secret なしの交換を拒否する
+            if e.code in (400, 401) and not uses_default_app:
+                raise EngineError("auth", "err.not_public") from e
             raise EngineError("auth", "err.token_http", code=e.code) from e
         except OSError as e:
             raise EngineError("other", "err.offline", detail=str(e)) from e
@@ -284,7 +291,7 @@ class NormalizerEngine:
         )
 
         self._status("connecting", t("status.connecting.title"))
-        rpc = self._rpc_factory(str(self.config["discord"]["client_id"]))
+        rpc = self._rpc_factory(self._client_id())
         try:
             rpc.connect()
         except DiscordRPCError as e:

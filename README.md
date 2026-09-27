@@ -42,10 +42,10 @@ Only moments when exactly one person is speaking are measured. A high percentile
 ## Usage
 
 1. Run `VoiceNormalizerForDiscord.exe`
-2. On first launch, a 3-step setup guide appears. Follow it to create your own Discord application and paste its Client ID and Client Secret.
-   (Unapproved apps can't use Discord RPC, so each user needs their own application. Creating one is free, and the owner of an application can use RPC without approval.)
-3. On first launch only, Discord shows a confirmation prompt. Click [Authorize].
-4. Join a voice call as usual.
+2. On first launch only, Discord shows a confirmation prompt. Click [Authorize].
+3. Join a voice call as usual.
+
+**About the test version:** Discord only lets approved applications change voice settings through its local RPC. Until this tool is approved, the built-in app works for its owner and for up to 50 testers registered in the Developer Portal (Discord's limit). If you're not registered, the app says so, and you can use your own free Discord application instead: [Settings] → "Use my own Discord app" guides you through creating one (turn on "Public Client", add the redirect URL, paste the Client ID). No Client Secret is needed; the tool uses PKCE.
 
 The tool starts automatically. If Discord isn't running or the connection drops, it reconnects every 5 seconds. It also follows you when you leave a call or switch channels.
 
@@ -103,9 +103,8 @@ With the Discord desktop app running:
 
 ```powershell
 pip install .
-copy config.example.toml config.toml
-# fill in client_id / client_secret in config.toml
-voice-normalizer-for-discord --config config.toml
+voice-normalizer-for-discord
+# optional: copy config.example.toml to config.toml to change settings
 ```
 
 ### Parameters

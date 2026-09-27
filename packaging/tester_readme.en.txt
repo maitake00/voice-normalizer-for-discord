@@ -39,23 +39,20 @@
     Click [More info] -> [Run anyway].
 
 
-* One-time setup (2-3 minutes)
-  Because of how Discord works, everyone needs to create their own
-  "Discord application" (free). The app shows a 3-step guide on first
-  launch. Just follow it:
+* Before you start (one time)
+  1. This test version works for registered testers only.
+     Send your Discord username to the person who shared this tool with
+     you, and ask to be added as a tester. If you receive an invitation,
+     accept it.
+  2. Start the app. Discord shows a confirmation prompt; click
+     [Authorize]. (If the Discord window is behind other windows, the
+     prompt is easy to miss.)
 
-  1. [Open Developer Portal] -> click [New Application] in the top right
-     (any name is fine, e.g. voice-test)
-  2. In the left menu open [OAuth2] -> under [Redirects] click
-     [Add Redirect], paste  http://127.0.0.1  and click [Save Changes]
-     (The app will not work without this. Don't forget [Save Changes].)
-  3. On the same [OAuth2] page, copy the Client ID and the Client Secret
-     (click [Reset Secret] to reveal it), paste them into the app, and
-     click [Save and start]
+  That's it. You don't need to create anything yourself.
 
-  Discord then shows a confirmation prompt. Click [Authorize].
-  (If the Discord window is behind other windows, the prompt is easy
-   to miss.)
+  If you are not registered, the app tells you so. You can then use
+  [Use my own Discord app] to create your own free Discord application
+  instead (takes a minute or two; the app guides you through it).
 
 
 * How to use
@@ -102,5 +99,5 @@
     (it contains your Client ID and other settings):
       %APPDATA%\VoiceNormalizerForDiscord
     Tip: paste the line above into the File Explorer address bar.
-  - You can also delete the Discord application you created in the
-    Developer Portal.
+  - If you created your own Discord application, you can delete it in
+    the Developer Portal.

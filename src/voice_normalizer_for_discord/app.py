@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .engine import NormalizerEngine
 from .i18n import set_language, t
-from .settings import load_config
+from .settings import default_config, load_config
 
 logger = logging.getLogger("dvn")
 
@@ -38,9 +38,8 @@ def main(argv: list[str] | None = None) -> int:
         datefmt="%H:%M:%S",
     )
 
-    if not args.config.exists():
-        sys.exit(t("cli.no_config", path=args.config))
-    config = load_config(args.config)
+    # 設定ファイルが無ければ標準のアプリ・既定値で動かす
+    config = load_config(args.config) if args.config.exists() else default_config()
     set_language(config.get("ui", {}).get("language", "auto"))
 
     engine = NormalizerEngine(config, args.config.resolve().parent)

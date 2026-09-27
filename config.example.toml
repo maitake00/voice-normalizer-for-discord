@@ -1,10 +1,11 @@
-# Copy this file to config.toml (used by the command-line version).
-# client_id / client_secret come from your own Discord application
-# (see "Usage" in the README).
+# Optional config file for the command-line version.
+# Copy it to config.toml only if you want to change something.
 
 [discord]
+# Leave empty to use the standard app (works for registered testers).
+# To use your own Discord application, paste its Client ID here
+# (turn on "Public Client" and add the redirect http://127.0.0.1 in its OAuth2 settings).
 client_id = ""
-client_secret = ""
 
 [params]
 target_db = -24.0     # target loudness (dB)

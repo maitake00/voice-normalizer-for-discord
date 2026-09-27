@@ -58,6 +58,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "button.stop": {"en": "■ Stop", "ja": "■ 停止"},
     "button.settings": {"en": "Settings", "ja": "設定"},
     "button.review_setup": {"en": "Review setup", "ja": "設定を見直す"},
+    "button.use_own_app": {"en": "Use my own Discord app", "ja": "自分の Discord アプリを使う"},
     # ---- 状態カード ----
     "status.stopped.title": {"en": "Stopped", "ja": "停止中"},
     "status.stopped.sub": {
@@ -117,6 +118,10 @@ _STRINGS: dict[str, dict[str, str]] = {
     "error.title.check_setup": {"en": "Please check your setup", "ja": "設定を確認してください"},
     "error.title.generic": {"en": "Something went wrong", "ja": "エラーが発生しました"},
     "error.title.config_load": {"en": "Could not load settings", "ja": "設定を読み込めません"},
+    "error.title.not_tester": {
+        "en": "Tester registration needed",
+        "ja": "テスターの登録が必要です",
+    },
     "error.retrying": {
         "en": "{text}. Reconnecting in {sec} seconds.",
         "ja": "{text}。{sec} 秒後に自動で再接続します",
@@ -233,9 +238,19 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "Authorization in Discord failed: {detail}",
         "ja": "Discord での認証に失敗しました: {detail}",
     },
-    "err.bad_secret": {
-        "en": "The Client Secret seems to be wrong. Paste it again in the setup.",
-        "ja": "Client Secret が正しくないようです。設定から貼り付け直してください",
+    "err.not_public": {
+        "en": "Turn on \"Public Client\" on the [OAuth2] page of your Discord application, "
+        "then press [Start] again.",
+        "ja": "Discord アプリの［OAuth2］ページで「Public Client」をオンにしてから、"
+        "もう一度［開始］を押してください",
+    },
+    "err.not_tester": {
+        "en": "This test version only works for registered testers. Send your Discord "
+        "username to the person who shared it with you and ask to be added as a tester, "
+        "then accept the invitation. You can also use your own Discord application instead.",
+        "ja": "このテスト版は、登録されたテスターだけが使えます。配布した人にあなたの "
+        "Discord ユーザー名を伝えてテスターに登録してもらい、届いた招待を承認して"
+        "ください。自分の Discord アプリを作って使うこともできます",
     },
     "err.token_http": {
         "en": "Failed to get a login token (HTTP {code})",
@@ -250,13 +265,17 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ja": "Discord へのログインに失敗しました: {detail}",
     },
     "err.unexpected": {"en": "Unexpected error: {detail}", "ja": "予期しないエラー: {detail}"},
-    # ---- セットアップ画面 ----
-    "setup.title": {"en": "Getting started (one-time setup)", "ja": "はじめに（最初の 1 回だけ）"},
+    # ---- セットアップ画面(自分の Discord アプリを使う・上級者向け) ----
+    "setup.title": {
+        "en": "Use your own Discord application",
+        "ja": "自分の Discord アプリを使う",
+    },
     "setup.intro": {
-        "en": "This tool changes volumes through Discord's own interface, so you need "
-        "your own \"Discord application\". It's free and takes a minute or two.",
-        "ja": "このツールは Discord の機能を使って音量を変えるため、あなた専用の"
-        "「Discord アプリ」が必要です。無料で、1〜2 分で作れます。",
+        "en": "Normally you don't need this. Use it if you aren't registered as a tester, "
+        "or if you prefer to run the tool with your own Discord application "
+        "(free, takes a minute or two).",
+        "ja": "通常はこの設定は必要ありません。テスターとして登録されていない場合や、"
+        "自分の Discord アプリで使いたい場合に設定します（無料・1〜2 分）。",
     },
     "setup.step1.title": {"en": "Create a Discord application", "ja": "Discord アプリを作る"},
     "setup.step1.desc": {
@@ -266,44 +285,41 @@ _STRINGS: dict[str, dict[str, str]] = {
         "押して作成します（名前は自由です）。",
     },
     "setup.step1.button": {"en": "Open Developer Portal", "ja": "Developer Portal を開く"},
-    "setup.step2.title": {"en": "Add the redirect URL", "ja": "リダイレクト URL を登録する"},
+    "setup.step2.title": {
+        "en": "Set up OAuth2",
+        "ja": "OAuth2 を設定する",
+    },
     "setup.step2.desc": {
-        "en": "Open [OAuth2] in the left menu, click [Add Redirect] under [Redirects], "
-        "paste the URL below, then click [Save Changes].",
-        "ja": "左メニューの［OAuth2］を開き、［Redirects］の［Add Redirect］に"
-        "下の URL を貼り付けて［Save Changes］を押します。",
+        "en": "Open [OAuth2] in the left menu. Under [Redirects], click [Add Redirect] and "
+        "paste the URL below. Turn on [Public Client], then click [Save Changes].",
+        "ja": "左メニューの［OAuth2］を開き、［Redirects］の［Add Redirect］に下の URL を"
+        "貼り付けます。［Public Client］をオンにして、［Save Changes］を押します。",
     },
     "setup.copy": {"en": "Copy", "ja": "コピー"},
     "setup.copied": {"en": "Copied", "ja": "コピーしました"},
-    "setup.step3.title": {"en": "Paste the ID and secret", "ja": "ID とシークレットを貼り付ける"},
+    "setup.step3.title": {"en": "Paste the Client ID", "ja": "Client ID を貼り付ける"},
     "setup.step3.desc": {
         "en": "On the same [OAuth2] page, copy the Client ID and paste it below. "
-        "For the Client Secret, click [Reset Secret] to reveal it, then copy and paste it.",
+        "The Client Secret is not needed.",
         "ja": "同じ［OAuth2］ページの Client ID をコピーして貼り付けます。"
-        "Client Secret は［Reset Secret］を押すと表示されるので、それを"
-        "コピーして貼り付けます。",
+        "Client Secret は必要ありません。",
     },
     "setup.paste": {"en": "Paste", "ja": "貼り付け"},
-    "setup.show": {"en": "Show", "ja": "表示"},
     "setup.save": {"en": "Save and start", "ja": "保存して開始"},
     "setup.back": {"en": "Back", "ja": "戻る"},
+    "setup.use_default": {
+        "en": "Use the standard app instead",
+        "ja": "標準のアプリに戻す",
+    },
     "setup.note": {
-        "en": "Your ID and secret are stored only on this PC and never sent anywhere else. "
-        "Call audio is never recorded or sent.",
-        "ja": "ID とシークレットはこの PC の中だけに保存され、外部には送信されません。"
-        "通話の音声も保存・送信しません。",
+        "en": "The Client ID is stored only on this PC. Call audio is never recorded or sent.",
+        "ja": "Client ID はこの PC の中だけに保存されます。通話の音声は保存・送信しません。",
     },
     "setup.err_id": {
         "en": "The Client ID is a long number (e.g. 1234567890123456789). "
         "Please copy it again.",
         "ja": "Client ID は数字だけの長い番号です（例: 1234567890123456789）。"
         "コピーし直してください。",
-    },
-    "setup.err_secret": {
-        "en": "The Client Secret is too short. Copy the whole string shown after "
-        "[Reset Secret].",
-        "ja": "Client Secret が短すぎます。［Reset Secret］で表示された文字列を"
-        "丸ごとコピーしてください。",
     },
     # ---- 設定ダイアログ ----
     "settings.title": {"en": "Settings", "ja": "設定"},
@@ -346,7 +362,10 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ja": "ヒント: Discord の［ユーザー設定］→［音声・ビデオ］→［減衰］は 0% に"
         "してください。ON のままだと音量を正しく測れません。",
     },
-    "settings.redo": {"en": "Redo Discord app setup", "ja": "Discord アプリの設定をやり直す"},
+    "settings.redo": {
+        "en": "Use my own Discord app (advanced)",
+        "ja": "自分の Discord アプリを使う（上級者向け）",
+    },
     "settings.cancel": {"en": "Cancel", "ja": "キャンセル"},
     "settings.save": {"en": "Save", "ja": "保存"},
     # ---- CLI ----
@@ -357,12 +376,6 @@ _STRINGS: dict[str, dict[str, str]] = {
     "cli.config_help": {
         "en": "config file (default: ./config.toml)",
         "ja": "設定ファイル(既定: ./config.toml)",
-    },
-    "cli.no_config": {
-        "en": "Config file not found: {path}\nCopy config.example.toml and fill in "
-        "client_id / client_secret (see the README).",
-        "ja": "設定ファイルが見つかりません: {path}\nconfig.example.toml をコピーして "
-        "client_id / client_secret を設定してください(README を参照)。",
     },
     "cli.exiting": {"en": "Exiting", "ja": "終了します"},
 }

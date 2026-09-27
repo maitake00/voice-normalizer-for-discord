@@ -12,14 +12,15 @@ from voice_normalizer_for_discord.settings import (
 
 def test_save_and_load_roundtrip(tmp_path):
     config = default_config()
-    config["discord"]["client_id"] = "123"
-    config["discord"]["client_secret"] = 'a"b\\c'
+    config["discord"]["client_id"] = 'a"b\\c'  # エスケープの確認
+    config["discord"]["client_secret"] = "old"  # 以前の設定の名残は書き出さない
     config["params"]["target_db"] = -30.0
     path = tmp_path / "config.toml"
     save_config(path, config)
 
     loaded = load_config(path)
-    assert loaded["discord"]["client_secret"] == 'a"b\\c'
+    assert loaded["discord"]["client_id"] == 'a"b\\c'
+    assert "client_secret" not in loaded["discord"]
     assert loaded["params"]["target_db"] == -30.0
     assert loaded["params"]["percentile"] == 87.5
     assert loaded["ui"]["language"] == "auto"

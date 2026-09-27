@@ -42,10 +42,10 @@ Discord には話者ごとの音量を自動で揃える機能がなく、ユー
 ## 使い方
 
 1. `VoiceNormalizerForDiscord.exe` を起動する
-2. 初回だけ 3 ステップのセットアップ画面が出るので、案内に従って自分の Discord アプリを作り、Client ID / Client Secret を貼り付ける
-   (未承認アプリは Discord RPC を使えないため、使う人それぞれが自分のアプリを作る必要があります。作成は無料で、アプリのオーナーは承認なしで RPC を使えます)
-3. 初回だけ Discord の画面に確認ダイアログが出るので［認証］を押す
-4. あとはボイスチャンネルで通話するだけ
+2. 初回だけ Discord の画面に確認ダイアログが出るので［認証］を押す
+3. あとはボイスチャンネルで通話するだけ
+
+**テスト版について**: Discord は、承認されたアプリにしかローカル RPC 経由で音声設定を変えることを許していません。このツールが承認されるまでは、組み込みのアプリを使えるのは、アプリの持ち主と、Developer Portal に登録されたテスター(最大 50 人。Discord の上限)だけです。登録されていない場合は画面にそのことが表示され、代わりに自分用の Discord アプリ(無料)を使えます。［設定］→「自分の Discord アプリを使う」が手順を案内します(「Public Client」をオンにし、リダイレクト URL を追加して、Client ID を貼り付ける)。Client Secret は不要です(PKCE を使います)。
 
 起動すると自動で開始し、Discord が起動していないときや接続が切れたときは 5 秒ごとに自動で再接続します。通話を抜けたり別のチャンネルに移ったりしても自動で追従します。
 
@@ -103,9 +103,8 @@ Discord デスクトップアプリを起動した状態で:
 
 ```powershell
 pip install .
-copy config.example.toml config.toml
-# config.toml に client_id / client_secret を記入
-voice-normalizer-for-discord --config config.toml
+voice-normalizer-for-discord
+# 設定を変えたいときだけ config.example.toml を config.toml にコピーして編集
 ```
 
 ### パラメータ
