@@ -45,6 +45,21 @@ def test_every_key_used_in_code_exists():
     assert not missing, missing
 
 
+def test_choice_card_keys_exist():
+    # 選択画面は f"{key}.title" のように組み立てて使うので個別に確認する
+    for card in ("welcome.tester", "welcome.own"):
+        for part in ("title", "desc", "button"):
+            assert f"{card}.{part}" in i18n._STRINGS
+
+
+def test_setup_guides_mark_buttons():
+    # 手順の各行には押すボタン名 [[...]] が含まれ、両言語で同じボタン名を使う
+    for step in ("setup.step1.lines", "setup.step2.lines", "setup.step3.lines"):
+        entry = i18n._STRINGS[step]
+        buttons = [re.findall(r"\[\[(.+?)\]\]", entry[lang]) for lang in ("en", "ja")]
+        assert buttons[0] and buttons[0] == buttons[1], step
+
+
 def test_switching_language():
     i18n.set_language("ja")
     # 日本語では折り返し対策でスペースが改行しないスペース(U+00A0)になる

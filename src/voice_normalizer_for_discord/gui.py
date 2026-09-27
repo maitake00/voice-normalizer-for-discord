@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import platform
 import queue
+import re
 import sys
 import time
 import tkinter as tk
@@ -225,6 +226,34 @@ def _label(parent, text="", size=10, color="text", bold=False, bg=None, **kw):
     )
 
 
+_BUTTON_RE = re.compile(r"\[\[(.+?)\]\]")
+
+
+def _guide_line(parent, text: str) -> tk.Frame:
+    """「[[OAuth2]] を開く」のような手順 1 行。[[...]] を押すボタンとして強調する。"""
+    bg = parent["bg"]
+    row = tk.Frame(parent, bg=bg)
+    pos = 0
+    for m in _BUTTON_RE.finditer(text):
+        if m.start() > pos:
+            _label(row, text[pos : m.start()], size=9, color="muted").pack(side="left")
+        tk.Label(
+            row,
+            text=m.group(1),
+            font=(FONT, 9, "bold"),
+            bg=C["input"],
+            fg=C["text"],
+            padx=px(6),
+            pady=px(1),
+            highlightthickness=1,
+            highlightbackground=C["accent"],
+        ).pack(side="left", padx=px(2))
+        pos = m.end()
+    if pos < len(text):
+        _label(row, text[pos:], size=9, color="muted").pack(side="left")
+    return row
+
+
 def _entry(parent, var, show=""):
     return tk.Entry(
         parent,
@@ -400,16 +429,21 @@ class NormalizerGUI:
         self._wrap_labels: list[tuple[tk.Label, int]] = []
 
         self.show_numbers = tk.BooleanVar(value=False)
+        self._setup_origin = "main"  # 「自分のアプリ」画面の［戻る］の行き先
 
         self.main = self._build_main()
         self.setup = self._build_setup()
+        self.welcome = self._build_welcome()
 
         root.bind("<Configure>", self._on_resize)
         root.protocol("WM_DELETE_WINDOW", self._on_close)
 
-        # 標準のアプリ(App Testers に登録済みの人向け)があるので、常にすぐ開始する
-        self._show_main()
-        self._start()
+        if self.config_path.exists():
+            self._show_main()
+            self._start()
+        else:
+            # 初回: 招待されたテスターか、自分の Discord アプリで使うかを選んでもらう
+            self._show_welcome()
 
         self._poll_events()
 
@@ -559,12 +593,12 @@ class NormalizerGUI:
         intro.pack(fill="x", pady=(px(6), px(10)))
         self._wrap_labels.append((intro, 60))
 
-        body = self._step(f, 1, t("setup.step1.title"), t("setup.step1.desc"))
+        body = self._step(f, 1, t("setup.step1.title"), t("setup.step1.lines"))
         FlatButton(
             body, t("setup.step1.button"), lambda: webbrowser.open(PORTAL_URL)
         ).pack(anchor="w")
 
-        body = self._step(f, 2, t("setup.step2.title"), t("setup.step2.desc"))
+        body = self._step(f, 2, t("setup.step2.title"), t("setup.step2.lines"))
         row = tk.Frame(body, bg=C["panel"])
         row.pack(fill="x")
         uri_var = tk.StringVar(value=REDIRECT_URI)
@@ -576,7 +610,7 @@ class NormalizerGUI:
         )
         self.copy_btn.pack(side="left", padx=(px(8), 0))
 
-        body = self._step(f, 3, t("setup.step3.title"), t("setup.step3.desc"))
+        body = self._step(f, 3, t("setup.step3.title"), t("setup.step3.lines"))
         self.client_id_var = tk.StringVar(value=self._custom_client_id())
         self._paste_row(body, "Client ID", self.client_id_var)
 
@@ -587,7 +621,7 @@ class NormalizerGUI:
         buttons = tk.Frame(f, bg=C["bg"])
         buttons.pack(fill="x", pady=(px(10), 0))
         FlatButton(buttons, t("setup.save"), self._save_setup, size=11).pack(side="left")
-        FlatButton(buttons, t("setup.back"), self._show_main, kind="secondary").pack(
+        FlatButton(buttons, t("setup.back"), self._setup_back, kind="secondary").pack(
             side="left", padx=(px(8), 0)
         )
         self.setup_default = FlatButton(
@@ -599,7 +633,8 @@ class NormalizerGUI:
         self._wrap_labels.append((note, 60))
         return outer
 
-    def _step(self, parent, num: int, title: str, desc: str) -> tk.Frame:
+    def _step(self, parent, num: int, title: str, lines: str) -> tk.Frame:
+        """番号付きの手順カード。lines は改行区切りで、[[...]] は押すボタン名。"""
         card = tk.Frame(parent, bg=C["panel"], padx=px(16), pady=px(14))
         card.pack(fill="x", pady=px(6))
         head = tk.Frame(card, bg=C["panel"])
@@ -610,12 +645,61 @@ class NormalizerGUI:
         circle.create_text(s // 2, s // 2, text=str(num), fill="#ffffff", font=(FONT, 10, "bold"))
         circle.pack(side="left", padx=(0, px(10)))
         _label(head, title, size=11, bold=True).pack(side="left")
-        d = _label(card, desc, size=9, color="muted")
-        d.pack(fill="x", pady=(px(6), px(10)))
-        self._wrap_labels.append((d, 100))
+
+        guide = tk.Frame(card, bg=C["panel"])
+        guide.pack(fill="x", pady=(px(8), px(10)))
+        for i, line in enumerate(lines.split("\n"), 1):
+            row = tk.Frame(guide, bg=C["panel"])
+            row.pack(anchor="w", pady=px(2))
+            _label(row, f"{i}.", size=9, color="faint", width=2).pack(side="left")
+            _guide_line(row, line).pack(side="left")
         body = tk.Frame(card, bg=C["panel"])
         body.pack(fill="x")
         return body
+
+    def _build_welcome(self) -> tk.Frame:
+        outer = tk.Frame(self.root, bg=C["bg"])
+        area = ScrollArea(outer, C["bg"])
+        area.pack(fill="both", expand=True)
+        f = tk.Frame(area.inner, bg=C["bg"], padx=px(20), pady=px(22))
+        f.pack(fill="both", expand=True)
+
+        _label(f, APP_NAME, size=10, color="faint").pack(anchor="w")
+        _label(f, t("welcome.title"), size=17, bold=True).pack(anchor="w", pady=(px(2), 0))
+        intro = _label(f, t("welcome.intro"), size=10, color="muted")
+        intro.pack(fill="x", pady=(px(6), px(12)))
+        self._wrap_labels.append((intro, 60))
+
+        self._choice_card(
+            f, "welcome.tester", self._choose_tester, kind="primary"
+        )
+        self._choice_card(f, "welcome.own", self._choose_own, kind="secondary")
+
+        note = _label(f, t("welcome.note"), size=9, color="faint")
+        note.pack(fill="x", pady=(px(14), 0))
+        self._wrap_labels.append((note, 60))
+        return outer
+
+    def _choice_card(self, parent, key: str, command, kind: str) -> None:
+        card = tk.Frame(parent, bg=C["panel"], padx=px(18), pady=px(16))
+        card.pack(fill="x", pady=px(6))
+        _label(card, t(f"{key}.title"), size=12, bold=True).pack(anchor="w")
+        desc = _label(card, t(f"{key}.desc"), size=9, color="muted")
+        desc.pack(fill="x", pady=(px(6), px(12)))
+        self._wrap_labels.append((desc, 100))
+        FlatButton(card, t(f"{key}.button"), command, kind=kind).pack(anchor="w")
+
+    def _choose_tester(self) -> None:
+        self._switch_app("")
+
+    def _choose_own(self) -> None:
+        self._show_setup(origin="welcome")
+
+    def _setup_back(self) -> None:
+        if self._setup_origin == "welcome":
+            self._show_welcome()
+        else:
+            self._show_main()
 
     def _paste_row(self, parent, caption, var) -> tk.Entry:
         _label(parent, caption, size=9, color="muted").pack(anchor="w", pady=(px(4), px(2)))
@@ -633,17 +717,22 @@ class NormalizerGUI:
     def _apply_language(self) -> None:
         """画面を作り直して、今の状態を新しい言語で表示し直す。"""
         on_setup = self.setup.winfo_ismapped()
+        on_welcome = self.welcome.winfo_ismapped()
         self.main.destroy()
         self.setup.destroy()
+        self.welcome.destroy()
         self._cards = {}
         self._notices = {}
         self._wrap_labels = []
 
         self.main = self._build_main()
         self.setup = self._build_setup()
+        self.welcome = self._build_welcome()
         self._restore_log()
         if on_setup:
-            self._show_setup()
+            self._show_setup(origin=self._setup_origin)
+        elif on_welcome:
+            self._show_welcome()
         else:
             self._show_main()
 
@@ -671,10 +760,18 @@ class NormalizerGUI:
 
     def _show_main(self) -> None:
         self.setup.pack_forget()
+        self.welcome.pack_forget()
         self.main.pack(fill="both", expand=True)
 
-    def _show_setup(self) -> None:
+    def _show_welcome(self) -> None:
         self.main.pack_forget()
+        self.setup.pack_forget()
+        self.welcome.pack(fill="both", expand=True)
+
+    def _show_setup(self, origin: str = "main") -> None:
+        self._setup_origin = origin
+        self.main.pack_forget()
+        self.welcome.pack_forget()
         self.client_id_var.set(self._custom_client_id())
         self.setup_error.configure(text="")
         if self._custom_client_id():

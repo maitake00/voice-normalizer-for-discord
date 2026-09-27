@@ -6,8 +6,9 @@ Test version of a tool that automatically evens out each person's volume in Disc
 Download `VoiceNormalizerForDiscord-{version}.zip` from **Assets** below, extract it, and read `README.txt` inside.
 
 - Windows 11 recommended / requires the Discord desktop app
-- **Testers need to be registered.** Become Discord friends with the person who shared this, send them your Discord username, and accept the invitation that arrives by email. After that, just start the app and click [Authorize] in Discord.
-  (Not registered? You can use your own free Discord application instead; the app guides you.)
+- On first launch, choose how to use it:
+  - **Invited as a tester** (Discord friends of the person who shared this): accept the invitation email, then just click [Authorize] in Discord.
+  - **Use my own Discord application** (everyone else): no friend request or invitation needed; the app guides you through a 1-2 minute setup.
 - Call audio is never recorded or sent anywhere. Only what you hear changes.
 
 ## About this file
@@ -37,8 +38,9 @@ Discord の通話で、相手ごとの音量を自動で揃えるツールのテ
 下の **Assets** から `VoiceNormalizerForDiscord-{version}.zip` をダウンロードし、展開してから中の `はじめにお読みください.txt` を読んでください。
 
 - Windows 11 推奨 / Discord のデスクトップアプリが必要です
-- **テスターの登録が必要です。** 配布した人と Discord のフレンドになり、あなたの Discord ユーザー名を伝えて、メールで届く招待を承認してください。あとはツールを起動して、Discord の画面で［認証］を押すだけです
-  (登録されていない場合は、自分用の Discord アプリ(無料)を作って使うこともできます。画面が案内します)
+- 初めて起動すると、使い方を選ぶ画面が出ます
+  - **テスターとして招待された**(配布した人の Discord フレンド): 届いた招待メールを承認し、あとは Discord の画面で［認証］を押すだけです
+  - **自分の Discord アプリで使う**(それ以外の人): フレンド登録や招待は不要です。画面の案内に従って 1〜2 分で準備できます
 - 通話の音声を保存・送信することはありません。変わるのはあなたの側で聞こえる音量だけです
 - この exe は、このリポジトリのソースコードから GitHub Actions で自動ビルドしたものです
 - 署名がないため「Windows によって PC が保護されました」と表示されることがあります。[詳細情報] → [実行] で起動できます

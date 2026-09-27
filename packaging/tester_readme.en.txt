@@ -40,21 +40,30 @@
 
 
 * Before you start (one time)
-  1. This test version works for registered testers only.
-     Become Discord friends with the person who shared this tool with
-     you, send them your Discord username, and ask to be added as a
-     tester.
-  2. An invitation arrives at the email address of your Discord account.
-     Open it and accept it. (Check your spam folder if it doesn't arrive.)
-  3. Start the app. Discord shows a confirmation prompt; click
-     [Authorize]. (If the Discord window is behind other windows, the
-     prompt is easy to miss.)
+  On first launch, the app asks how you want to use it. Pick one:
 
-  That's it. You don't need to create anything yourself.
+  A. "I was invited as a tester"
+     For people who are Discord friends with the person who shared this
+     tool.
+     1. Send them your Discord username and ask to be added as a tester.
+     2. An invitation arrives at the email address of your Discord
+        account. Open it and accept it. (Check your spam folder if it
+        doesn't arrive.)
+     3. Start the app, choose "I was invited as a tester", and click
+        [Start].
+     4. Discord shows a confirmation prompt. Click [Authorize].
+        (If the Discord window is behind other windows, the prompt is
+         easy to miss.)
 
-  If you are not registered, the app tells you so. You can then use
-  [Use my own Discord app] to create your own free Discord application
-  instead (takes a minute or two; the app guides you through it).
+  B. "Use my own Discord application"
+     For everyone else. No friend request or invitation needed.
+     1. Start the app, choose "Use my own Discord application", and
+        click [Set up].
+     2. Follow the on-screen guide (1-2 minutes, free). It shows exactly
+        which buttons to click in the Discord Developer Portal.
+     3. Discord shows a confirmation prompt. Click [Authorize].
+
+  You can switch between A and B later in [Settings].
 
 
 * How to use

@@ -42,10 +42,13 @@ Only moments when exactly one person is speaking are measured. A high percentile
 ## Usage
 
 1. Run `VoiceNormalizerForDiscord.exe`
-2. On first launch only, Discord shows a confirmation prompt. Click [Authorize].
-3. Join a voice call as usual.
+2. On first launch, choose how to use it:
+   - **"I was invited as a tester"**: for Discord friends of the maintainer who accepted the tester invitation email. No setup needed.
+   - **"Use my own Discord application"**: for everyone else. No friend request or invitation needed; the app shows exactly what to click in the Developer Portal (1–2 minutes, free).
+3. Discord shows a confirmation prompt the first time. Click [Authorize].
+4. Join a voice call as usual.
 
-**About the test version:** Discord only lets approved applications change voice settings through its local RPC. Until this tool is approved, the built-in app works for its owner and for up to 50 testers registered in the Developer Portal (Discord's limit). If you're not registered, the app says so, and you can use your own free Discord application instead: [Settings] → "Use my own Discord app" guides you through creating one (turn on "Public Client", add the redirect URL, paste the Client ID). No Client Secret is needed; the tool uses PKCE.
+**Why the choice?** Discord only lets approved applications change voice settings through its local RPC. Until this tool is approved, the built-in app works only for its owner and up to 50 testers registered in the Developer Portal (Discord's limit; testers must be the owner's Discord friends). Anyone can use their own Discord application instead: create one, add the redirect URL, turn on "Public Client", and paste its Client ID. No Client Secret is needed; the tool uses PKCE.
 
 The tool starts automatically. If Discord isn't running or the connection drops, it reconnects every 5 seconds. It also follows you when you leave a call or switch channels.
 

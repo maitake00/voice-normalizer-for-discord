@@ -266,6 +266,35 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ja": "Discord へのログインに失敗しました: {detail}",
     },
     "err.unexpected": {"en": "Unexpected error: {detail}", "ja": "予期しないエラー: {detail}"},
+    # ---- 初回の選択画面 ----
+    "welcome.title": {"en": "Welcome", "ja": "ようこそ"},
+    "welcome.intro": {
+        "en": "Choose how to use this tool. You can change it later in [Settings].",
+        "ja": "使い方を選んでください。あとから［設定］で変更できます。",
+    },
+    "welcome.tester.title": {"en": "I was invited as a tester", "ja": "テスターとして招待された"},
+    "welcome.tester.desc": {
+        "en": "For people who accepted the tester invitation email. No setup needed: "
+        "just click [Authorize] in Discord.",
+        "ja": "テスターの招待メールを承認した人はこちら。準備は不要で、Discord の画面で"
+        "［認証］を押すだけです。",
+    },
+    "welcome.tester.button": {"en": "Start", "ja": "この方法で始める"},
+    "welcome.own.title": {
+        "en": "Use my own Discord application",
+        "ja": "自分の Discord アプリで使う",
+    },
+    "welcome.own.desc": {
+        "en": "For everyone else. No friend request or invitation needed. Takes a minute "
+        "or two (free), and the next screen shows exactly what to click.",
+        "ja": "招待されていない人はこちら。フレンド登録や招待は不要です。無料で 1〜2 分の"
+        "準備が必要で、次の画面で押す場所を案内します。",
+    },
+    "welcome.own.button": {"en": "Set up", "ja": "準備を始める"},
+    "welcome.note": {
+        "en": "Call audio is never recorded or sent. Only what you hear changes.",
+        "ja": "通話の音声は保存・送信しません。変わるのはあなたの側で聞こえる音量だけです。",
+    },
     # ---- セットアップ画面(自分の Discord アプリを使う・上級者向け) ----
     "setup.title": {
         "en": "Use your own Discord application",
@@ -279,31 +308,37 @@ _STRINGS: dict[str, dict[str, str]] = {
         "自分の Discord アプリで使いたい場合に設定します（無料・1〜2 分）。",
     },
     "setup.step1.title": {"en": "Create a Discord application", "ja": "Discord アプリを作る"},
-    "setup.step1.desc": {
-        "en": "Open the Developer Portal with the button below and click "
-        "[New Application] in the top right. Any name is fine.",
-        "ja": "下のボタンで Developer Portal を開き、右上の［New Application］を"
-        "押して作成します（名前は自由です）。",
+    "setup.step1.lines": {
+        "en": "Open the Developer Portal with the button below\n"
+        "Click [[New Application]] in the top right\n"
+        "Enter any name, agree to the terms, and click [[Create]]",
+        "ja": "下のボタンで Developer Portal を開く\n"
+        "右上の [[New Application]] を押す\n"
+        "名前を入れ(自由)、規約に同意して [[Create]] を押す",
     },
     "setup.step1.button": {"en": "Open Developer Portal", "ja": "Developer Portal を開く"},
     "setup.step2.title": {
         "en": "Set up OAuth2",
         "ja": "OAuth2 を設定する",
     },
-    "setup.step2.desc": {
-        "en": "Open [OAuth2] in the left menu. Under [Redirects], click [Add Redirect] and "
-        "paste the URL below. Turn on [Public Client], then click [Save Changes].",
-        "ja": "左メニューの［OAuth2］を開き、［Redirects］の［Add Redirect］に下の URL を"
-        "貼り付けます。［Public Client］をオンにして、［Save Changes］を押します。",
+    "setup.step2.lines": {
+        "en": "Open [[OAuth2]] in the left menu\n"
+        "Click [[Add Redirect]] and paste the URL below\n"
+        "Turn on [[Public Client]]\n"
+        "Click [[Save Changes]] at the bottom",
+        "ja": "左メニューの [[OAuth2]] を開く\n"
+        "[[Add Redirect]] を押し、下の URL を貼り付ける\n"
+        "[[Public Client]] をオンにする\n"
+        "下に出る [[Save Changes]] を押す",
     },
     "setup.copy": {"en": "Copy", "ja": "コピー"},
     "setup.copied": {"en": "Copied", "ja": "コピーしました"},
     "setup.step3.title": {"en": "Paste the Client ID", "ja": "Client ID を貼り付ける"},
-    "setup.step3.desc": {
-        "en": "On the same [OAuth2] page, copy the Client ID and paste it below. "
-        "The Client Secret is not needed.",
-        "ja": "同じ［OAuth2］ページの Client ID をコピーして貼り付けます。"
-        "Client Secret は必要ありません。",
+    "setup.step3.lines": {
+        "en": "On the same page, click [[Copy]] next to Client ID\n"
+        "Paste it below (no Client Secret needed)",
+        "ja": "同じページの Client ID の横にある [[Copy]] を押す\n"
+        "下の欄に貼り付ける(Client Secret は不要)",
     },
     "setup.paste": {"en": "Paste", "ja": "貼り付け"},
     "setup.save": {"en": "Save and start", "ja": "保存して開始"},
