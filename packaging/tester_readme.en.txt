@@ -41,10 +41,12 @@
 
 * Before you start (one time)
   1. This test version works for registered testers only.
-     Send your Discord username to the person who shared this tool with
-     you, and ask to be added as a tester. If you receive an invitation,
-     accept it.
-  2. Start the app. Discord shows a confirmation prompt; click
+     Become Discord friends with the person who shared this tool with
+     you, send them your Discord username, and ask to be added as a
+     tester.
+  2. An invitation arrives at the email address of your Discord account.
+     Open it and accept it. (Check your spam folder if it doesn't arrive.)
+  3. Start the app. Discord shows a confirmation prompt; click
      [Authorize]. (If the Discord window is behind other windows, the
      prompt is easy to miss.)
 

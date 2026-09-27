@@ -245,12 +245,13 @@ _STRINGS: dict[str, dict[str, str]] = {
         "もう一度［開始］を押してください",
     },
     "err.not_tester": {
-        "en": "This test version only works for registered testers. Send your Discord "
-        "username to the person who shared it with you and ask to be added as a tester, "
-        "then accept the invitation. You can also use your own Discord application instead.",
-        "ja": "このテスト版は、登録されたテスターだけが使えます。配布した人にあなたの "
-        "Discord ユーザー名を伝えてテスターに登録してもらい、届いた招待を承認して"
-        "ください。自分の Discord アプリを作って使うこともできます",
+        "en": "This test version only works for registered testers. Become Discord friends "
+        "with the person who shared it, ask them to add you as a tester, then accept the "
+        "invitation sent to your Discord account's email. You can also use your own "
+        "Discord application instead.",
+        "ja": "このテスト版は、登録されたテスターだけが使えます。配布した人と Discord の"
+        "フレンドになってテスターに登録してもらい、Discord のメールアドレスに届く招待を"
+        "承認してください。自分の Discord アプリを作って使うこともできます",
     },
     "err.token_http": {
         "en": "Failed to get a login token (HTTP {code})",
