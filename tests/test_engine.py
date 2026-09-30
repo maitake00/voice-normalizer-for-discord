@@ -258,6 +258,48 @@ def test_speaker_without_stop_does_not_block_others(tmp_path, fast_engine, how):
     assert any("a" in text and ("reset" in text.lower() or "リセット" in text) for text in logs)
 
 
+def test_open_mic_speaker_does_not_block_others(tmp_path, fast_engine, monkeypatch):
+    """マイクが入りっぱなしの人(Discord 上でも話しっぱなし)がいても他の人を測定できる。
+
+    実際の通話で起きた: マイク感度が高く雑音まで送り続けていた人がずっと
+    「話している」扱いになり、他の人の発話がすべて同時発話として捨てられた。
+    """
+    monkeypatch.setattr(engine_mod, "_STALE_SPEAKING_SEC", 0.5)
+    rpc = FakeRPC("1")
+    rpc.channel = ("c1", "一般")
+    rpc.volumes = {"openmic": 100, "b": 100}
+    capture = FakeCapture(rpc, {"b": -24.0})
+    eng = _make_engine(tmp_path, rpc, capture)
+    collected: list[dict] = []
+    eng.start()
+    try:
+        assert _wait(lambda: ("sub", "SPEAKING_START", "c1") in rpc.sub_log)
+        rpc.events.put({"evt": "SPEAKING_START", "data": {"user_id": "openmic"}})  # STOP は来ない
+        capture.speaker = "b"
+        last_burst = [0.0]
+
+        def b_measured() -> bool:
+            # b は普通に話す: 話の合間ごとに STOP / START が来る
+            now = time.monotonic()
+            if now - last_burst[0] > 0.15:
+                last_burst[0] = now
+                rpc.events.put({"evt": "SPEAKING_STOP", "data": {"user_id": "b"}})
+                rpc.events.put({"evt": "SPEAKING_START", "data": {"user_id": "b"}})
+            collected.extend(_drain(eng))
+            return _samples(collected, "b") >= 30
+
+        assert _wait(b_measured, timeout=10)
+    finally:
+        eng.request_stop()
+        eng.join(5)
+    collected.extend(_drain(eng))
+    last = [e for e in collected if e["kind"] == "users" and e["users"]][-1]["users"]
+    openmic = next(u for u in last if u["id"] == "openmic")
+    assert openmic["open_mic"] and openmic["samples"] == 0
+    assert any(e["kind"] == "log" and e["level"] == "warning" and "openmic" in e["text"]
+               for e in collected)
+
+
 def test_discord_not_running_is_reported(tmp_path):
     from voice_normalizer_for_discord.discord import DiscordRPCError
 

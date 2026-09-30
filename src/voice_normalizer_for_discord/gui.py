@@ -347,6 +347,9 @@ class MemberCard:
         if u["muted"]:
             text, color = t("card.muted"), "faint"
             bar_color = C["faint"]
+        elif u.get("open_mic"):
+            text, color = t("card.open_mic"), "yellow"
+            bar_color = C["faint"]
         elif u["pinned"]:
             text = t("card.pinned")
             color, bar_color = "yellow", C["yellow"]

@@ -45,8 +45,8 @@ _SNAPSHOT_INTERVAL_SEC = 1.0
 _STATS_LOG_INTERVAL_SEC = 60.0
 _MAX_CHUNKS_PER_TICK = 100
 _LOUD_BLOCK_DB = -50.0  # これを超えるブロックを「音あり」とみなす(診断用)
-# これ以上途切れずに「話している」ままなら SPEAKING_STOP の取りこぼしとみなす
-_STALE_SPEAKING_SEC = 60.0
+# これ以上途切れずに「話している」ままならオープンマイク(雑音まで送りっぱなし)とみなす
+_STALE_SPEAKING_SEC = 30.0
 
 
 class EngineError(Exception):
@@ -62,46 +62,55 @@ class EngineError(Exception):
 class SpeakingGate:
     """「今ちょうど 1 人だけ喋っている」区間のみ採用する(SPEC §2-1)。
 
-    話している途中で通話を抜けた / ミュートした人には SPEAKING_STOP が
-    届かないことがある(実際の通話で確認)。取り残された人がいると、他の人が
-    話すたびに「同時発話」として全て捨てられ、誰も測定できなくなるため、
-    retain() と expire_stale() で片付ける。
+    「話している」ままの人がいると、他の人が話すたびに「同時発話」として
+    すべて捨てられ、誰も測定できなくなる。実際の通話では次の 2 つで起きた:
+      - 話している途中で抜けた / ミュートした(SPEAKING_STOP が来ない)
+        → retain() で外す
+      - マイク感度が高く、雑音まで拾って Discord 上でも話しっぱなし
+        (オープンマイク)→ expire_stale() で外し、open_mic として記録する。
+        声と雑音を区別できないので、その人は測定しない。本人が一度話し終わる
+        (SPEAKING_STOP)と通常に戻る
     """
 
     def __init__(self, self_user_id: str, clock=time.monotonic) -> None:
         self._self_id = self_user_id
         self._clock = clock
         self._since: dict[str, float] = {}  # user_id -> 話し始めた時刻
+        self.open_mic: set[str] = set()  # 話しっぱなしで測定から外している人
         self.adopted = 0
         self.discarded_overlap = 0
 
     def on_start(self, user_id: str) -> None:
-        if user_id != self._self_id:
+        if user_id != self._self_id and user_id not in self.open_mic:
             self._since[user_id] = self._clock()
 
     def on_stop(self, user_id: str) -> None:
         self._since.pop(user_id, None)
+        self.open_mic.discard(user_id)
 
     def clear(self) -> None:
         self._since.clear()
+        self.open_mic.clear()
 
     def retain(self, can_speak: set[str]) -> list[str]:
         """今話せる人(通話にいて、ミュートしていない人)以外を外す。外した人を返す。"""
         gone = [uid for uid in self._since if uid not in can_speak]
         for uid in gone:
             del self._since[uid]
+        self.open_mic &= can_speak
         return gone
 
     def expire_stale(self, max_sec: float) -> list[str]:
-        """max_sec 以上「話している」ままの人を外す。外した人を返す。
+        """max_sec 以上途切れずに「話している」人をオープンマイクとして外す。
 
         Discord は話している途中の短い間でも STOP / START を送り直すので、
-        途切れずに長く続く「話している」は STOP の取りこぼしとみなす。
+        普通の会話が max_sec 途切れないことはまずない。外した人を返す。
         """
         now = self._clock()
         stale = [uid for uid, t0 in self._since.items() if now - t0 >= max_sec]
         for uid in stale:
             del self._since[uid]
+            self.open_mic.add(uid)
         return stale
 
     def speaking_ids(self) -> set[str]:
@@ -434,11 +443,15 @@ class NormalizerEngine:
 
                 volumes, names, muted, silenced = self._read_voice_states(current, self_id)
                 known_names.update(names)
-                # SPEAKING_STOP を取りこぼした人(抜けた・ミュートした・止まったまま)を外す
-                reset = gate.retain(set(volumes) - silenced)
-                reset += gate.expire_stale(_STALE_SPEAKING_SEC)
-                for uid in reset:
+                # 「話している」ままの人を外す(抜けた・ミュートした / オープンマイク)
+                for uid in gate.retain(set(volumes) - silenced):
                     self._log("info", t("log.speaking_reset", name=known_names.get(uid, uid)))
+                for uid in gate.expire_stale(_STALE_SPEAKING_SEC):
+                    self._log(
+                        "warning",
+                        t("log.open_mic", name=known_names.get(uid, uid),
+                          sec=f"{_STALE_SPEAKING_SEC:.0f}"),
+                    )
                 if channel_id is not None:
                     self._control_step(
                         rpc, est, ctl, volumes, names, muted, pinned, last_error
@@ -551,6 +564,7 @@ class NormalizerEngine:
                     "error_db": last_error.get(uid),
                     "deadband_db": ctl.config.deadband_db,
                     "speaking": uid in speaking,
+                    "open_mic": uid in gate.open_mic,
                     "muted": uid in muted,
                     "pinned": uid in pinned,
                 }

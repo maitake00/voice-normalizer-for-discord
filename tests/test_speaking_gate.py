@@ -38,16 +38,33 @@ def test_retain_drops_people_who_cannot_speak():
     assert gate.speaking_ids() == {"b"}
 
 
-def test_stale_speaking_expires_but_restart_refreshes():
+def test_nonstop_speaker_becomes_open_mic_until_they_stop():
     clock = FakeClock()
     gate = SpeakingGate("me", clock=clock)
-    gate.on_start("stuck")
+    gate.on_start("openmic")
     gate.on_start("talker")
-    clock.now = 50
+    clock.now = 25
     gate.on_start("talker")  # 話し直すと時刻が更新される
-    clock.now = 61
-    assert gate.expire_stale(60) == ["stuck"]
+    clock.now = 31
+    assert gate.expire_stale(30) == ["openmic"]
     assert gate.speaking_ids() == {"talker"}
+    assert gate.open_mic == {"openmic"}
+
+    gate.on_start("openmic")  # オープンマイクの間は測定しない
+    assert "openmic" not in gate.speaking_ids()
+    gate.on_stop("openmic")  # 一度話し終われば通常に戻る
+    gate.on_start("openmic")
+    assert "openmic" in gate.speaking_ids() and not gate.open_mic
+
+
+def test_retain_also_clears_open_mic_of_people_who_left():
+    clock = FakeClock()
+    gate = SpeakingGate("me", clock=clock)
+    gate.on_start("a")
+    clock.now = 40
+    gate.expire_stale(30)
+    gate.retain(set())
+    assert gate.open_mic == set()
 
 
 def test_read_voice_states_marks_muted_and_deafened_as_silenced():

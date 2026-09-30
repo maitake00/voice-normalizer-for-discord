@@ -150,6 +150,10 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "Learning their voice… {pct}% (progresses while they speak alone)",
         "ja": "声を聞き取り中… {pct}%（この人が一人で話すと進みます）",
     },
+    "card.open_mic": {
+        "en": "Mic is always on, so not measured (ask them to adjust Input Sensitivity in Discord)",
+        "ja": "マイクが入りっぱなしのため測定していません（本人に Discord の入力感度の調整を頼んでください）",
+    },
     "card.ready": {"en": "Ready", "ja": "準備できました"},
     "card.good": {"en": "✓ Volume is just right", "ja": "✓ ちょうどいい音量です"},
     "card.raising": {"en": "Turning up gradually", "ja": "少しずつ大きくしています"},
@@ -195,10 +199,16 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ja": "{name} の音量を {old}% → {new}% に変更 (目標との差 {diff:+.1f}dB)",
     },
     "log.speaking_reset": {
-        "en": "Reset the \"speaking\" state of {name} (left, muted, or no stop signal "
-        "from Discord)",
-        "ja": "{name} の「話している」状態をリセットしました(退出・ミュート、または "
-        "Discord から終了の知らせが届かなかったため)",
+        "en": "Reset the \"speaking\" state of {name} (left the call or muted while speaking)",
+        "ja": "{name} の「話している」状態をリセットしました(話している途中で退出・ミュートしたため)",
+    },
+    "log.open_mic": {
+        "en": "{name} has been \"speaking\" nonstop for {sec} seconds (the microphone is "
+        "probably picking up background noise). Not measuring them so that others can be "
+        "measured. Ask them to lower Input Sensitivity in Discord.",
+        "ja": "{name} が {sec} 秒以上途切れずに「話している」状態です(マイクが周りの音まで"
+        "拾っている可能性があります)。ほかの人を測定できるよう、この人は測定から外します。"
+        "本人に Discord の入力感度の調整を頼んでください",
     },
     "log.pinned": {
         "en": "{name} is still too quiet at 200%. Ask them to turn up their microphone.",
