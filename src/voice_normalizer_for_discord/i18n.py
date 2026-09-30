@@ -194,6 +194,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{name}: volume {old}% → {new}% (off target by {diff:+.1f} dB)",
         "ja": "{name} の音量を {old}% → {new}% に変更 (目標との差 {diff:+.1f}dB)",
     },
+    "log.speaking_reset": {
+        "en": "Reset the \"speaking\" state of {name} (left, muted, or no stop signal "
+        "from Discord)",
+        "ja": "{name} の「話している」状態をリセットしました(退出・ミュート、または "
+        "Discord から終了の知らせが届かなかったため)",
+    },
     "log.pinned": {
         "en": "{name} is still too quiet at 200%. Ask them to turn up their microphone.",
         "ja": "{name} は 200% でも目標に届きません。本人にマイク音量を上げてもらってください",

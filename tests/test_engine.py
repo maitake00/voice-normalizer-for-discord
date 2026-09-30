@@ -26,6 +26,7 @@ class FakeRPC:
         self.lock = threading.Lock()
         self.channel: tuple[str, str] | None = None  # (id, name)
         self.volumes: dict[str, int] = {}
+        self.self_muted: set[str] = set()  # 本人がミュートしている人
         self.sub_log: list[tuple[str, str, str]] = []
 
     def connect(self):
@@ -47,7 +48,11 @@ class FakeRPC:
             cid, name = self.channel
             states = [{"user": {"id": SELF_ID, "username": SELF_ID}, "volume": 100}]
             for uid, vol in self.volumes.items():
-                states.append({"user": {"id": uid, "username": uid}, "volume": vol})
+                states.append({
+                    "user": {"id": uid, "username": uid},
+                    "volume": vol,
+                    "voice_state": {"self_mute": uid in self.self_muted},
+                })
             return {"id": cid, "name": name, "voice_states": states}
 
     def set_user_volume(self, user_id, volume):
@@ -200,6 +205,57 @@ def test_follows_leaving_and_switching_channels(tmp_path, fast_engine):
     assert ("monitoring", "ゲーム") in states
     assert states.index(("monitoring", "一般")) < states.index(("monitoring", "ゲーム"))
     assert [s for s, _ in states].count("waiting") >= 2  # 最初 + 抜けたとき
+
+
+def _samples(eng_events: list[dict], uid: str) -> int:
+    snaps = [e for e in eng_events if e["kind"] == "users"]
+    for snap in reversed(snaps):
+        for u in snap["users"]:
+            if u["id"] == uid:
+                return u["samples"]
+    return 0
+
+
+@pytest.mark.parametrize("how", ["leave", "self_mute"])
+def test_speaker_without_stop_does_not_block_others(tmp_path, fast_engine, how):
+    """話している途中で抜けた/ミュートした人に STOP が来なくても、他の人を測定できる。
+
+    実際の通話で起きた不具合: 取り残された人がずっと「話している」扱いになり、
+    他の人の発話がすべて同時発話として捨てられて「声を聞き取り中」から進まなかった。
+    """
+    rpc = FakeRPC("1")
+    rpc.channel = ("c1", "一般")
+    rpc.volumes = {"a": 100, "b": 100}
+    capture = FakeCapture(rpc, {"a": -24.0, "b": -24.0})
+    eng = _make_engine(tmp_path, rpc, capture)
+    collected: list[dict] = []
+    eng.start()
+    try:
+        assert _wait(lambda: ("sub", "SPEAKING_START", "c1") in rpc.sub_log)
+        # a が話し始め、STOP が来ないまま抜ける / ミュートする
+        rpc.events.put({"evt": "SPEAKING_START", "data": {"user_id": "a"}})
+        time.sleep(0.2)
+        with rpc.lock:
+            if how == "leave":
+                del rpc.volumes["a"]
+            else:
+                rpc.self_muted.add("a")
+        time.sleep(0.2)
+        # b が話す。a が取り残されていたら同時発話として捨てられる
+        rpc.events.put({"evt": "SPEAKING_START", "data": {"user_id": "b"}})
+        capture.speaker = "b"
+
+        def b_measured() -> bool:
+            collected.extend(_drain(eng))
+            return _samples(collected, "b") >= 30
+
+        assert _wait(b_measured, timeout=10)
+    finally:
+        eng.request_stop()
+        eng.join(5)
+    collected.extend(_drain(eng))
+    logs = [e["text"] for e in collected if e["kind"] == "log"]
+    assert any("a" in text and ("reset" in text.lower() or "リセット" in text) for text in logs)
 
 
 def test_discord_not_running_is_reported(tmp_path):

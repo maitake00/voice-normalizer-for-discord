@@ -45,6 +45,8 @@ _SNAPSHOT_INTERVAL_SEC = 1.0
 _STATS_LOG_INTERVAL_SEC = 60.0
 _MAX_CHUNKS_PER_TICK = 100
 _LOUD_BLOCK_DB = -50.0  # これを超えるブロックを「音あり」とみなす(診断用)
+# これ以上途切れずに「話している」ままなら SPEAKING_STOP の取りこぼしとみなす
+_STALE_SPEAKING_SEC = 60.0
 
 
 class EngineError(Exception):
@@ -58,33 +60,59 @@ class EngineError(Exception):
 
 
 class SpeakingGate:
-    """「今ちょうど 1 人だけ喋っている」区間のみ採用する(SPEC §2-1)。"""
+    """「今ちょうど 1 人だけ喋っている」区間のみ採用する(SPEC §2-1)。
 
-    def __init__(self, self_user_id: str) -> None:
+    話している途中で通話を抜けた / ミュートした人には SPEAKING_STOP が
+    届かないことがある(実際の通話で確認)。取り残された人がいると、他の人が
+    話すたびに「同時発話」として全て捨てられ、誰も測定できなくなるため、
+    retain() と expire_stale() で片付ける。
+    """
+
+    def __init__(self, self_user_id: str, clock=time.monotonic) -> None:
         self._self_id = self_user_id
-        self._speaking: set[str] = set()
+        self._clock = clock
+        self._since: dict[str, float] = {}  # user_id -> 話し始めた時刻
         self.adopted = 0
         self.discarded_overlap = 0
 
     def on_start(self, user_id: str) -> None:
         if user_id != self._self_id:
-            self._speaking.add(user_id)
+            self._since[user_id] = self._clock()
 
     def on_stop(self, user_id: str) -> None:
-        self._speaking.discard(user_id)
+        self._since.pop(user_id, None)
 
     def clear(self) -> None:
-        self._speaking.clear()
+        self._since.clear()
+
+    def retain(self, can_speak: set[str]) -> list[str]:
+        """今話せる人(通話にいて、ミュートしていない人)以外を外す。外した人を返す。"""
+        gone = [uid for uid in self._since if uid not in can_speak]
+        for uid in gone:
+            del self._since[uid]
+        return gone
+
+    def expire_stale(self, max_sec: float) -> list[str]:
+        """max_sec 以上「話している」ままの人を外す。外した人を返す。
+
+        Discord は話している途中の短い間でも STOP / START を送り直すので、
+        途切れずに長く続く「話している」は STOP の取りこぼしとみなす。
+        """
+        now = self._clock()
+        stale = [uid for uid, t0 in self._since.items() if now - t0 >= max_sec]
+        for uid in stale:
+            del self._since[uid]
+        return stale
 
     def speaking_ids(self) -> set[str]:
-        return set(self._speaking)
+        return set(self._since)
 
     def sole_speaker(self) -> str | None:
         """単独発話者の user_id。0 人か 2 人以上なら None(カウントも更新)。"""
-        n = len(self._speaking)
+        n = len(self._since)
         if n == 1:
             self.adopted += 1
-            return next(iter(self._speaking))
+            return next(iter(self._since))
         if n >= 2:
             self.discarded_overlap += 1
         return None
@@ -319,6 +347,7 @@ class NormalizerEngine:
         channel_id: str | None = None
         volumes: dict[str, int] = {}
         names: dict[str, str] = {}
+        known_names: dict[str, str] = {}  # 抜けた人の名前もログに出せるように
         muted: set[str] = set()
         pinned: set[str] = set()
         last_error: dict[str, float] = {}
@@ -403,7 +432,13 @@ class NormalizerEngine:
                     else:
                         self._status("waiting", t("status.left"))
 
-                volumes, names, muted = self._read_voice_states(current, self_id)
+                volumes, names, muted, silenced = self._read_voice_states(current, self_id)
+                known_names.update(names)
+                # SPEAKING_STOP を取りこぼした人(抜けた・ミュートした・止まったまま)を外す
+                reset = gate.retain(set(volumes) - silenced)
+                reset += gate.expire_stale(_STALE_SPEAKING_SEC)
+                for uid in reset:
+                    self._log("info", t("log.speaking_reset", name=known_names.get(uid, uid)))
                 if channel_id is not None:
                     self._control_step(
                         rpc, est, ctl, volumes, names, muted, pinned, last_error
@@ -471,13 +506,18 @@ class NormalizerEngine:
     @staticmethod
     def _read_voice_states(
         channel: dict | None, self_id: str
-    ) -> tuple[dict[str, int], dict[str, str], set[str]]:
-        """チャンネル内の他メンバーの volume% / 表示名 / ローカルミュートを読む。"""
+    ) -> tuple[dict[str, int], dict[str, str], set[str], set[str]]:
+        """チャンネル内の他メンバーの状態を読む。
+
+        戻り値: (volume%, 表示名, 自分がローカルミュートした人, 話せない人)
+        「話せない人」は本人のミュート・スピーカーミュート・サーバーミュート中の人。
+        """
         volumes: dict[str, int] = {}
         names: dict[str, str] = {}
         muted: set[str] = set()
+        silenced: set[str] = set()
         if not channel:
-            return volumes, names, muted
+            return volumes, names, muted, silenced
         for vs in channel.get("voice_states", []):
             user = vs.get("user", {})
             uid = user.get("id")
@@ -487,9 +527,12 @@ class NormalizerEngine:
             names[uid] = (
                 vs.get("nick") or user.get("global_name") or user.get("username") or uid
             )
-            if vs.get("mute"):
+            if vs.get("mute"):  # 自分側のローカルミュート
                 muted.add(uid)
-        return volumes, names, muted
+            state = vs.get("voice_state") or {}
+            if any(state.get(k) for k in ("self_mute", "mute", "self_deaf", "deaf", "suppress")):
+                silenced.add(uid)
+        return volumes, names, muted, silenced
 
     def _emit_users(
         self, est, gate, volumes, names, muted, pinned, last_error, ctl
