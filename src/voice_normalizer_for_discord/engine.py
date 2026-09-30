@@ -39,6 +39,7 @@ from .core import (
 from .discord import DiscordRPC, DiscordRPCError, DiscordRPCTimeout
 from .discord import oauth
 from .i18n import t
+from .settings import effective_params
 
 _POLL_INTERVAL_SEC = 2.0  # チャンネル状態の再取得 + 制御ループの周期
 _SNAPSHOT_INTERVAL_SEC = 1.0
@@ -311,19 +312,19 @@ class NormalizerEngine:
             self._emit("stopped")
 
     def _main(self) -> None:
-        params = self.config.get("params", {})
+        params = effective_params(self.config)
         est = RawLoudnessEstimator(
             EstimatorConfig(
-                percentile=params.get("percentile", 87.5),
-                window=params.get("window", 600),
-                min_samples=params.get("min_samples", 50),
+                percentile=params["percentile"],
+                window=params["window"],
+                min_samples=params["min_samples"],
             )
         )
         ctl = VolumeController(
             ControllerConfig(
-                target_db=params.get("target_db", -24.0),
-                deadband_db=params.get("deadband_db", 1.5),
-                max_step_db=params.get("max_step_db", 3.0),
+                target_db=params["target_db"],
+                deadband_db=params["deadband_db"],
+                max_step_db=params["max_step_db"],
             )
         )
 

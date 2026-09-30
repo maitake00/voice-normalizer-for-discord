@@ -119,7 +119,7 @@ voice-normalizer-for-discord
 | `target_db` | 目標ラウドネス | -24.0 |
 | `percentile` | 声の大きさとみなすパーセンタイル | 87.5 |
 | `window` | ヒストグラムの窓長(100 ms のブロック数) | 600 |
-| `min_samples` | 補正を始める最低サンプル数 | 50 |
+| `min_samples` | 補正を始めるまでに必要な単独発話の量(100 ms のブロック数) | 10(1 秒) |
 | `deadband_db` | これより小さい差は補正しない | 1.5 |
 | `max_step_db` | 1 回の補正の上限 | 3.0 |
 

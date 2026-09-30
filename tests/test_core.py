@@ -188,6 +188,44 @@ class TestConvergence:
 
         return volumes, est, pinned_history
 
+    def test_default_settings_start_after_one_second_without_wild_swings(self):
+        """既定値では約 1 秒話した時点で補正が始まり、行き過ぎずに収束する。
+
+        以前は 5 秒分の単独発話を待っていたが、実際の通話で「最初の言葉から
+        調整してほしい」という要望があり既定値を 1 秒に短縮した。その分、
+        初期の粗い推定で逆方向に動いたり、目標を大きく飛び越えたりしないことを確かめる。
+        """
+        rng = np.random.default_rng(7)
+        est = RawLoudnessEstimator(EstimatorConfig())  # 既定値
+        ctl = VolumeController(ControllerConfig(target_db=self.TARGET_DB))
+        meter = BlockLoudnessMeter(FS)
+        speakers = {"quiet": -33.0, "loud": -14.0}
+        volumes = {uid: 100 for uid in speakers}
+        history = {uid: [] for uid in speakers}
+        first_adjust_round = {}
+
+        for round_no in range(40):  # 1 ラウンド = 各人 1 秒ずつ話して、補正を 1 回
+            for uid, raw_db in speakers.items():
+                for block_db in meter.feed(apply_volume(synth_voice(rng, 1.0, raw_db), volumes[uid])):
+                    est.add_block(uid, block_db, volumes[uid])
+                raw_est = est.estimate(uid)
+                if raw_est is None:
+                    continue
+                adj = ctl.update(uid, volumes[uid], raw_est)
+                if adj.changed:
+                    first_adjust_round.setdefault(uid, round_no)
+                    volumes[uid] = adj.new_volume
+                history[uid].append(volumes[uid])
+
+        # 最初の 1 秒のあとすぐ補正が始まる
+        assert first_adjust_round == {"quiet": 0, "loud": 0}
+        # 小さい人は上げる一方、大きい人は下げる一方(逆方向に振れない)
+        assert all(b >= a for a, b in zip(history["quiet"], history["quiet"][1:]))
+        assert all(b <= a for a, b in zip(history["loud"], history["loud"][1:]))
+        for uid in speakers:
+            perceived = self._perceived_db(est, uid, volumes[uid])
+            assert perceived == pytest.approx(self.TARGET_DB, abs=2.0), uid
+
     def _perceived_db(self, est: RawLoudnessEstimator, uid: str, volume: int) -> float:
         raw = est.estimate(uid)
         assert raw is not None

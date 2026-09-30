@@ -119,7 +119,7 @@ Only these parameters are configurable ([config.example.toml](config.example.tom
 | `target_db` | Target loudness | -24.0 |
 | `percentile` | Percentile treated as a person's voice level | 87.5 |
 | `window` | Histogram window length (blocks of 100 ms) | 600 |
-| `min_samples` | Minimum samples before adjusting a person | 50 |
+| `min_samples` | Blocks of solo speech (100 ms each) before a person is first adjusted | 10 (1 second) |
 | `deadband_db` | Differences smaller than this are left alone | 1.5 |
 | `max_step_db` | Maximum change per adjustment | 3.0 |
 

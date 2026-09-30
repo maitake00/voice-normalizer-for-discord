@@ -14,11 +14,13 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class EstimatorConfig:
-    """初期値はすべて暫定。v0.1 の実測で決める(SPEC §2, §7)。"""
+    """初期値は実際の通話での検証をもとに見直していく(SPEC §2, §7)。"""
 
     percentile: float = 87.5  # 声量とみなすパーセンタイル(85〜90 あたりから実測)
     window: int = 600  # 保持するブロック数(100ms × 600 = 60 秒)
-    min_samples: int = 50  # 補正を開始する最低サンプル数
+    # 補正を開始する最低サンプル数(100ms × 10 = 1 秒)。実際の通話で 5 秒待つのは
+    # 遅いと分かったため短縮。初期の粗い推定は補正の上限と EMA で抑えられる
+    min_samples: int = 10
 
 
 class RawLoudnessEstimator:

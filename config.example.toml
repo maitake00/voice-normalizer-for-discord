@@ -11,7 +11,7 @@ client_id = ""
 target_db = -24.0     # target loudness (dB)
 percentile = 87.5     # percentile treated as a person's voice level (see "Balancing" in the README)
 window = 600          # histogram window (blocks of 100 ms; 600 = 60 seconds)
-min_samples = 50      # minimum samples before adjusting a person
+min_samples = 10      # blocks of solo speech (100 ms each) before a person is first adjusted (10 = 1 second)
 deadband_db = 1.5     # differences smaller than this are left alone
 max_step_db = 3.0     # maximum change per adjustment
 

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from voice_normalizer_for_discord.settings import (
+    DEFAULT_PARAMS,
     default_config,
+    effective_params,
     gui_config_dir,
     load_config,
     save_config,
@@ -22,8 +24,23 @@ def test_save_and_load_roundtrip(tmp_path):
     assert loaded["discord"]["client_id"] == 'a"b\\c'
     assert "client_secret" not in loaded["discord"]
     assert loaded["params"]["target_db"] == -30.0
-    assert loaded["params"]["percentile"] == 87.5
+    # 変更していない値は書き出さず、読み込み時は既定値が使われる
+    assert "percentile" not in loaded["params"]
+    assert effective_params(loaded)["percentile"] == DEFAULT_PARAMS["percentile"]
     assert loaded["ui"]["language"] == "auto"
+
+
+def test_old_default_written_by_earlier_versions_is_ignored(tmp_path):
+    # 以前の版は変更していない値もすべて書き出していた(min_samples = 50 が既定値だった)
+    path = tmp_path / "config.toml"
+    path.write_text("[params]\nmin_samples = 50\ntarget_db = -24.0\n", encoding="utf-8")
+    assert effective_params(load_config(path))["min_samples"] == DEFAULT_PARAMS["min_samples"]
+
+
+def test_customized_value_is_kept(tmp_path):
+    path = tmp_path / "config.toml"
+    path.write_text("[params]\nmin_samples = 30\n", encoding="utf-8")
+    assert effective_params(load_config(path))["min_samples"] == 30
 
 
 def test_old_config_dir_is_migrated(tmp_path, monkeypatch):
